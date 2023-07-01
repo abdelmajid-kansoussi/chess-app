@@ -1,6 +1,17 @@
 class Game {
   constructor() {
+    this.drop = this.drop.bind(this);
+    this.dragOver = this.dragOver.bind(this);
+    this.dragEnter = this.dragEnter.bind(this);
+    this.dragStart = this.dragStart.bind(this);
+
     this.position = this.getStartingPosition();
+
+    this.draggedPiece = null;
+    this.startingSquareElement = null;
+    this.endingSquareElement = null;
+    this.draggedPieceElement = null;
+
     this.drawBoard();
   }
 
@@ -14,6 +25,9 @@ class Game {
         boardElement.appendChild(squareElement);
         squareElement.dataset.row = i;
         squareElement.dataset.col = j;
+        squareElement.addEventListener("drop", this.drop);
+        squareElement.addEventListener("dragenter", this.dragEnter);
+        squareElement.addEventListener("dragover", this.dragOver);
 
         if (i % 2 == j % 2) {
           squareElement.style.backgroundColor = "green";
@@ -26,6 +40,7 @@ class Game {
           pieceElement.draggable = true;
           pieceElement.src = `images/${piece.color}-${piece.name}.png`;
           squareElement.appendChild(pieceElement);
+          pieceElement.addEventListener("dragstart", this.dragStart);
         }
       });
     });
@@ -45,7 +60,38 @@ class Game {
     ];
   }
 
-  
+  dragStart(e) {
+    const { row, col } = e.target.parentElement.dataset;
+    this.startingSquareElement = e.target.parentElement;
+    this.draggedPiece = this.position[row][col];
+    this.draggedPieceElement = e.target;
+  }
 
-  // makeMove() {}
+  drop(e) {
+    // e.target == square
+    this.endingSquareElement = e.target;
+    this.endingSquareElement.appendChild(this.draggedPieceElement);
+    this.startingSquareElement.innerHtml = "";
+
+    const { endingRow, endingCol } = this.endingSquareElement.dataset;
+    this.makeMove(row, col);
+
+    this.startingSquareElement = null;
+    this.endingSquareElement = null;
+    this.draggedPiece = null;
+    this.draggedPieceElement = null;
+  }
+
+  dragOver(e) {
+    e.preventDefault();
+  }
+
+  dragEnter(e) {
+    e.preventDefault();
+  }
+
+  makeMove(endingRow, endingCol) {
+    this.position[row][col] = this.draggpedPiece;
+    
+  }
 }
