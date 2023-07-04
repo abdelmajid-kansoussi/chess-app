@@ -8,9 +8,8 @@ class Game {
     this.position = this.getStartingPosition();
 
     this.draggedPiece = null;
-    this.startingSquareElement = null;
-    this.endingSquareElement = null;
     this.draggedPieceElement = null;
+    this.turn = "white";
 
     this.drawBoard();
   }
@@ -47,37 +46,103 @@ class Game {
   }
 
   getStartingPosition() {
-    //prettier-ignore
     return [
-      [new Rook(0, 0, "black"), new Knight(0, 1, "black"), new Bishop(0, 2, "black"), new Queen(0, 3, "black"), new King(0, 4, "black"), new Bishop(0, 5, "black"), new Knight(0, 6, "black"), new Rook(0, 7, "black")],
-      [new Pawn(1, 0, "black"),  new Pawn(1, 1, "black") ,  new Pawn(1, 2, "black") , new Pawn(1, 3, "black") , new Pawn(1, 4, "black"),  new Pawn(1, 5, "black") ,  new Pawn(1, 6, "black") , new Pawn(1, 7, "black")],
-      [            ""         ,            ""            ,           ""             ,           ""            ,          ""            ,           ""             ,           ""             ,          ""            ],
-      [            ""         ,            ""            ,           ""             ,           ""            ,          ""            ,           ""             ,           ""             ,          ""            ],
-      [            ""         ,            ""            ,           ""             ,           ""            ,          ""            ,           ""             ,           ""             ,          ""            ],
-      [            ""         ,            ""            ,           ""             ,           ""            ,          ""            ,           ""             ,           ""             ,          ""            ],
-      [new Pawn(6, 0, "white"),  new Pawn(6, 1, "white") ,  new Pawn(6, 2, "white") , new Pawn(6, 3, "white") , new Pawn(6, 4, "white"),  new Pawn(6, 5, "white") ,  new Pawn(6, 6, "white") , new Pawn(6, 7, "white")],
-      [new Rook(7, 0, "white"), new Knight(7, 1, "white"), new Bishop(7, 2, "white"), new Queen(7, 3, "white"), new King(7, 4, "white"), new Bishop(7, 5, "white"), new Knight(7, 6, "white"), new Rook(7, 7, "white")],
+      [
+        new Rook(0, 0, "black"),
+        new Knight(0, 1, "black"),
+        new Bishop(0, 2, "black"),
+        new Queen(0, 3, "black"),
+        new King(0, 4, "black"),
+        new Bishop(0, 5, "black"),
+        new Knight(0, 6, "black"),
+        new Rook(0, 7, "black"),
+      ],
+      [
+        new Pawn(1, 0, "black"),
+        new Pawn(1, 1, "black"),
+        new Pawn(1, 2, "black"),
+        new Pawn(1, 3, "black"),
+        new Pawn(1, 4, "black"),
+        new Pawn(1, 5, "black"),
+        new Pawn(1, 6, "black"),
+        new Pawn(1, 7, "black"),
+      ],
+      ["", "", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", ""],
+      [
+        new Pawn(6, 0, "white"),
+        new Pawn(6, 1, "white"),
+        new Pawn(6, 2, "white"),
+        new Pawn(6, 3, "white"),
+        new Pawn(6, 4, "white"),
+        new Pawn(6, 5, "white"),
+        new Pawn(6, 6, "white"),
+        new Pawn(6, 7, "white"),
+      ],
+      [
+        new Rook(7, 0, "white"),
+        new Knight(7, 1, "white"),
+        new Bishop(7, 2, "white"),
+        new Queen(7, 3, "white"),
+        new King(7, 4, "white"),
+        new Bishop(7, 5, "white"),
+        new Knight(7, 6, "white"),
+        new Rook(7, 7, "white"),
+      ],
     ];
   }
 
   dragStart(e) {
-    const { row, col } = e.target.parentElement.dataset;
-    this.startingSquareElement = e.target.parentElement;
-    this.draggedPiece = this.position[row][col];
+    const { row: startingRow, col: startingCol } =
+      e.target.parentElement.dataset;
+    this.draggedPiece = this.position[startingRow][startingCol];
     this.draggedPieceElement = e.target;
   }
 
   drop(e) {
-    // e.target == square
-    this.endingSquareElement = e.target;
-    this.endingSquareElement.appendChild(this.draggedPieceElement);
-    this.startingSquareElement.innerHtml = "";
+    if (this.draggedPiece.color != this.turn) return;
 
-    const { endingRow, endingCol } = this.endingSquareElement.dataset;
-    this.makeMove(row, col);
+    let endingRow, endingCol;
 
-    this.startingSquareElement = null;
-    this.endingSquareElement = null;
+    if (e.target.classList.contains("square")) {
+      // if the e.target contains the class square, the square is empty
+      endingRow = e.target.dataset.row;
+      endingCol = e.target.dataset.col;
+      console.log(this.draggedPiece)
+      console.log(this.draggedPiece.getLegalMoves(this.position));
+
+      if (
+        this.isLegalMove(
+          { endingRow, endingCol },
+          this.draggedPiece.getLegalMoves(this.position)
+        )
+      ) {
+        e.target.appendChild(this.draggedPieceElement);
+      } else {
+        return;
+      }
+    } else {
+      // else e.target is a piece and the square is full
+      endingRow = e.target.parentElement.dataset.row;
+      endingCol = e.target.parentElement.dataset.col;
+      if (
+        this.isLegalMove(
+          { endingRow, endingCol },
+          this.draggedPiece.getLegalMoves(this.position)
+        )
+      ) {
+        e.target.appendChild(this.draggedPieceElement);
+      } else {
+        return;
+      }
+      e.target.parentElement.appendChild(this.draggedPieceElement);
+      e.target.parentElement.removeChild(e.target);
+    }
+
+    this.makeMove(endingRow, endingCol);
+
     this.draggedPiece = null;
     this.draggedPieceElement = null;
   }
@@ -91,7 +156,27 @@ class Game {
   }
 
   makeMove(endingRow, endingCol) {
-    this.position[row][col] = this.draggpedPiece;
-    
+    const { row: startingRow, col: startingCol } = this.draggedPiece;
+    this.position[endingRow][endingCol] = this.draggedPiece;
+    this.position[startingRow][startingCol] = "";
+    this.draggedPiece.row = Number(endingRow);
+    this.draggedPiece.col = Number(endingCol);
+    this.swapTurns();
+  }
+
+  swapTurns() {
+    this.turn = this.turn == "white" ? "black" : "white";
+  }
+
+  isLegalMove(move, legalMoves) {
+    for (const legalMove of legalMoves) {
+      if (
+        move.endingCol == legalMove.endingCol &&
+        move.endingRow == legalMove.endingRow
+      ) {
+        return true;
+      }
+    }
+    return false;
   }
 }

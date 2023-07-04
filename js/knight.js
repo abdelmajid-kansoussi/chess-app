@@ -4,6 +4,8 @@ class Knight extends Piece {
       this.name = "knight"
     }
   
-    getLegalMoves() {}
+    getLegalMoves(position) {
+      let movingDirections = []
+    }
   }
   
