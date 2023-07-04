@@ -106,12 +106,12 @@ class Game {
 
     let endingRow, endingCol;
 
+    console.log(this.draggedPiece.getLegalMoves(this.position))
+
     if (e.target.classList.contains("square")) {
       // if the e.target contains the class square, the square is empty
       endingRow = e.target.dataset.row;
       endingCol = e.target.dataset.col;
-      console.log(this.draggedPiece)
-      console.log(this.draggedPiece.getLegalMoves(this.position));
 
       if (
         this.isLegalMove(
