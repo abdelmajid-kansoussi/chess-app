@@ -1,7 +1,7 @@
 class Queen extends Piece {
   constructor(row, col, color) {
     super(row, col, color);
-    this.name = "queen"
+    this.name = "queen";
   }
 
   getLegalMoves(position) {
@@ -14,6 +14,10 @@ class Queen extends Piece {
       [0, -1],
       [1, 0],
       [-1, 0],
+      [1, 1],
+      [1, -1],
+      [-1, 1],
+      [-1, -1],
     ];
 
     for (const direction of directions) {
