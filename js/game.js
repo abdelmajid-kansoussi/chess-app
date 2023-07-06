@@ -106,7 +106,6 @@ class Game {
 
     let endingRow, endingCol;
 
-    console.log(this.draggedPiece.getLegalMoves(this.position))
 
     if (e.target.classList.contains("square")) {
       // if the e.target contains the class square, the square is empty
@@ -121,6 +120,7 @@ class Game {
       ) {
         e.target.appendChild(this.draggedPieceElement);
       } else {
+        console.log("hello")
         return;
       }
     } else {
