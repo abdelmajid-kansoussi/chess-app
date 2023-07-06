@@ -1,15 +1,15 @@
 class Bishop extends Piece {
   constructor(row, col, color) {
     super(row, col, color);
-    this.name = "bishop";
+    this.imgSrc = `images/${this.color}-bishop.png`
   }
 
-  getLegalMoves(position) {
+  getMoves(position) {
     // prettier-ignore
     this.row = Number(this.row);
     this.col = Number(this.col);
 
-    let legalMoves = [];
+    let moves = [];
     const directions = [
       [1, 1],
       [1, -1],
@@ -30,20 +30,28 @@ class Bishop extends Piece {
               this.col + i * direction[1]
             ] == ""
           ) {
-            legalMoves.push({
-              endingRow: this.row + i * direction[0],
-              endingCol: this.col + i * direction[1],
-            });
+            moves.push(
+              new Move(
+                this.row,
+                this.col,
+                this.row + i * direction[0],
+                this.col + i * direction[1]
+              )
+            );
             continue;
           }
           if (
             position[this.row + i * direction[0]][this.col + i * direction[1]]
               .color != this.color
           ) {
-            legalMoves.push({
-              endingRow: this.row + i * direction[0],
-              endingCol: this.col + i * direction[1],
-            });
+            moves.push(
+              new Move(
+                this.row,
+                this.col,
+                this.row + i * direction[0],
+                this.col + i * direction[1]
+              )
+            );
             break;
           }
           if (
@@ -56,7 +64,6 @@ class Bishop extends Piece {
       }
     }
 
-    console.log("/////////////////////////////////////////////7");
-    return legalMoves;
+    return moves;
   }
 }

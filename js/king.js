@@ -1,14 +1,14 @@
 class King extends Piece {
   constructor(row, col, color) {
     super(row, col, color);
-    this.name = "king";
+    this.imgSrc = `images/${this.color}-king.png`;
   }
 
-  getLegalMoves(position) {
+  getMoves(position) {
     this.row = Number(this.row);
     this.col = Number(this.col);
 
-    let legalMoves = [];
+    let moves = [];
     const directions = [
       [-1, -1],
       [-1, 0],
@@ -29,12 +29,16 @@ class King extends Piece {
         position[this.row + direction[0]][this.col + direction[1]].color !=
           this.color
       ) {
-        legalMoves.push({
-          endingRow: this.row + direction[0],
-          endingCol: this.col + direction[1],
-        });
+        moves.push(
+          new Move(
+            this.row,
+            this.col,
+            this.row + direction[0],
+            this.col + direction[1]
+          )
+        );
       }
     }
-    return legalMoves;
+    return moves;
   }
 }

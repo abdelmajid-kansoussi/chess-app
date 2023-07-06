@@ -1,8 +1,6 @@
 class Move {
   constructor(startingRow, startingCol, endingRow, endingCol) {
-    this.startingRow = this.startingRow;
-    this.startingCol = this.startingCol;
-    this.endingRow = this.endingRow;
-    this.endingCol = this.endingCol;
+    this.start = { row: startingRow, col: startingCol };
+    this.end = { row: endingRow, col: endingCol };
   }
 }

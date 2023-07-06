@@ -37,7 +37,7 @@ class Game {
         if (piece != "") {
           const pieceElement = document.createElement("img");
           pieceElement.draggable = true;
-          pieceElement.src = `images/${piece.color}-${piece.name}.png`;
+          pieceElement.src = piece.imgSrc;
           squareElement.appendChild(pieceElement);
           pieceElement.addEventListener("dragstart", this.dragStart);
         }
@@ -104,34 +104,32 @@ class Game {
   drop(e) {
     if (this.draggedPiece.color != this.turn) return;
 
-    let endingRow, endingCol;
-
+    let move;
 
     if (e.target.classList.contains("square")) {
+      console.log("heloo")
       // if the e.target contains the class square, the square is empty
-      endingRow = e.target.dataset.row;
-      endingCol = e.target.dataset.col;
-
-      if (
-        this.isLegalMove(
-          { endingRow, endingCol },
-          this.draggedPiece.getLegalMoves(this.position)
-        )
-      ) {
+      move = new Move(
+        this.draggedPiece.row,
+        this.draggedPiece.col,
+        Number(e.target.dataset.row),
+        Number(e.target.dataset.col)
+      );
+      if (this.isLegalMove(move, this.draggedPiece.getMoves(this.position))) {
         e.target.appendChild(this.draggedPieceElement);
       } else {
-        console.log("hello")
         return;
       }
     } else {
       // else e.target is a piece and the square is full
-      endingRow = e.target.parentElement.dataset.row;
-      endingCol = e.target.parentElement.dataset.col;
+      move = new Move(
+        this.draggedPiece.row,
+        this.draggedPiece.col,
+        Number(e.target.parentElement.dataset.row),
+        Number(e.target.parentElement.dataset.col)
+      );
       if (
-        this.isLegalMove(
-          { endingRow, endingCol },
-          this.draggedPiece.getLegalMoves(this.position)
-        )
+        this.isLegalMove(move, this.draggedPiece.getMoves(this.position))
       ) {
         e.target.appendChild(this.draggedPieceElement);
       } else {
@@ -141,7 +139,9 @@ class Game {
       e.target.parentElement.removeChild(e.target);
     }
 
-    this.makeMove(endingRow, endingCol);
+    this.makeMove(move);
+
+    this.swapTurns();
 
     this.draggedPiece = null;
     this.draggedPieceElement = null;
@@ -155,13 +155,11 @@ class Game {
     e.preventDefault();
   }
 
-  makeMove(endingRow, endingCol) {
-    const { row: startingRow, col: startingCol } = this.draggedPiece;
-    this.position[endingRow][endingCol] = this.draggedPiece;
-    this.position[startingRow][startingCol] = "";
-    this.draggedPiece.row = Number(endingRow);
-    this.draggedPiece.col = Number(endingCol);
-    this.swapTurns();
+  makeMove(move) {
+    this.position[move.end.row][move.end.col] = this.draggedPiece;
+    this.position[move.start.row][move.start.col] = "";
+    this.draggedPiece.row = move.end.row;
+    this.draggedPiece.col = move.end.col;
   }
 
   swapTurns() {
@@ -171,8 +169,8 @@ class Game {
   isLegalMove(move, legalMoves) {
     for (const legalMove of legalMoves) {
       if (
-        move.endingCol == legalMove.endingCol &&
-        move.endingRow == legalMove.endingRow
+        move.end.col == legalMove.end.col &&
+        move.end.row == legalMove.end.row
       ) {
         return true;
       }
