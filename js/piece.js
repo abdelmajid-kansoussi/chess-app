@@ -4,6 +4,4 @@ class Piece {
     this.col = col;
     this.color = color;
   }
-
-  
 }

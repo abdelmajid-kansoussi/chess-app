@@ -14,6 +14,22 @@ class Game {
     this.drawBoard();
   }
 
+  getSquareName(row, column) {
+    const columnMap = {
+      0: "a",
+      1: "b",
+      2: "c",
+      3: "d",
+      4: "e",
+      5: "f",
+      6: "g",
+      7: "h",
+    };
+    const squareName = `${columnMap[column]}${8 - row}`;
+    return squareName;
+  }
+
+
   drawBoard() {
     const boardElement = document.getElementById("board");
 
@@ -24,6 +40,7 @@ class Game {
         boardElement.appendChild(squareElement);
         squareElement.dataset.row = i;
         squareElement.dataset.col = j;
+        squareElement.dataset.name = this.getSquareName(i, j);
         squareElement.addEventListener("drop", this.drop);
         squareElement.addEventListener("dragenter", this.dragEnter);
         squareElement.addEventListener("dragover", this.dragOver);
@@ -204,21 +221,21 @@ class Game {
     return false;
   }
 
-  getKing(color) {
+  getKing(KingColor) {
     let king;
     this.position.forEach((row) =>
       row.forEach((piece) => {
-        if (piece.color == color && piece instanceof King) king = piece;
+        if (piece.color == KingColor && piece instanceof King) king = piece;
       })
     );
     return king;
   }
 
-  getPlayerMoves(color) {
+  getPlayerMoves(playerColor) {
     let moves = [];
     this.position.forEach((row) =>
       row.forEach((piece) => {
-        if (piece.color == color) {
+        if (piece.color == playerColor) {
           moves.push(piece.getMoves(this.position));
         }
       })
