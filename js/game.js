@@ -14,8 +14,8 @@ class Game {
     this.drawBoard();
   }
 
-  getSquareName(row, column) {
-    const columnMap = {
+  getSquareName(row, col) {
+    const colMap = {
       0: "a",
       1: "b",
       2: "c",
@@ -25,10 +25,16 @@ class Game {
       6: "g",
       7: "h",
     };
-    const squareName = `${columnMap[column]}${8 - row}`;
+    const squareName = `${colMap[col]}${8 - row}`;
     return squareName;
   }
 
+  getSquareRowAndCol(e) {
+    const boardRect = document.querySelector(".board").getBoundingClientRect();
+    const col = Math.floor((e.clientX - boardRect.x) / (boardRect.width / 8));
+    const row = Math.floor((e.clientY - boardRect.y) / (boardRect.width / 8));
+    return { row, col };
+  }
 
   drawBoard() {
     const boardElement = document.getElementById("board");
@@ -112,57 +118,36 @@ class Game {
   }
 
   dragStart(e) {
-    const { row: startingRow, col: startingCol } =
-      e.target.parentElement.dataset;
-    this.draggedPiece = this.position[startingRow][startingCol];
+    const { row, col } = this.getSquareRowAndCol(e);
+    this.draggedPiece = this.position[row][col];
     this.draggedPieceElement = e.target;
   }
 
   drop(e) {
     if (this.draggedPiece.color != this.turn) return;
 
-    let move;
+    const { row, col } = this.getSquareRowAndCol(e);
+    const squareName = this.getSquareName(row, col);
+    const squareElement = document.querySelector(`[data-name = ${squareName}]`);
 
-    if (e.target.classList.contains("square")) {
-      // if the e.target contains the class square, the square is empty
-      move = new Move(
-        this.draggedPiece.row,
-        this.draggedPiece.col,
-        Number(e.target.dataset.row),
-        Number(e.target.dataset.col)
-      );
-      if (this.isLegalMove(move, this.draggedPiece.getMoves(this.position))) {
-        this.makeMove(move);
-        if (this.isKingAttacked(this.turn)) {
-          this.unMakeMove(move);
-          return;
-        } else {
-          e.target.appendChild(this.draggedPieceElement);
-        }
-      } else {
+    const move = new Move(
+      this.draggedPiece.row,
+      this.draggedPiece.col,
+      row,
+      col
+    );
+
+    if (this.isLegalMove(move, this.draggedPiece.getMoves(this.position))) {
+      this.makeMove(move);
+      if (this.isKingAttacked(this.turn)) {
+        this.unMakeMove(move);
         return;
+      } else {
+        squareElement.innerHTML = "";
+        squareElement.appendChild(this.draggedPieceElement);
       }
     } else {
-      // else e.target is a piece and the square is full
-      move = new Move(
-        this.draggedPiece.row,
-        this.draggedPiece.col,
-        Number(e.target.parentElement.dataset.row),
-        Number(e.target.parentElement.dataset.col)
-      );
-      if (this.isLegalMove(move, this.draggedPiece.getMoves(this.position))) {
-        this.makeMove(move);
-        if (this.isKingAttacked(this.turn)) {
-          this.unMakeMove(move);
-          return;
-        } else {
-          e.target.appendChild(this.draggedPieceElement);
-        }
-      } else {
-        return;
-      }
-      e.target.parentElement.appendChild(this.draggedPieceElement);
-      e.target.parentElement.removeChild(e.target);
+      return;
     }
 
     this.makeMove(move);
