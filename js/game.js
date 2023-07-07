@@ -107,7 +107,6 @@ class Game {
     let move;
 
     if (e.target.classList.contains("square")) {
-      console.log("heloo")
       // if the e.target contains the class square, the square is empty
       move = new Move(
         this.draggedPiece.row,
@@ -116,7 +115,13 @@ class Game {
         Number(e.target.dataset.col)
       );
       if (this.isLegalMove(move, this.draggedPiece.getMoves(this.position))) {
-        e.target.appendChild(this.draggedPieceElement);
+        this.makeMove(move);
+        if (this.isKingAttacked(this.turn)) {
+          this.unMakeMove(move);
+          return;
+        } else {
+          e.target.appendChild(this.draggedPieceElement);
+        }
       } else {
         return;
       }
@@ -128,10 +133,14 @@ class Game {
         Number(e.target.parentElement.dataset.row),
         Number(e.target.parentElement.dataset.col)
       );
-      if (
-        this.isLegalMove(move, this.draggedPiece.getMoves(this.position))
-      ) {
-        e.target.appendChild(this.draggedPieceElement);
+      if (this.isLegalMove(move, this.draggedPiece.getMoves(this.position))) {
+        this.makeMove(move);
+        if (this.isKingAttacked(this.turn)) {
+          this.unMakeMove(move);
+          return;
+        } else {
+          e.target.appendChild(this.draggedPieceElement);
+        }
       } else {
         return;
       }
@@ -176,5 +185,44 @@ class Game {
       }
     }
     return false;
+  }
+
+  unMakeMove(move) {
+    this.position[move.start.row][move.start.col] = this.draggedPiece;
+    this.position[move.end.row][move.end.col] = "";
+    this.draggedPiece.row = move.start.row;
+    this.draggedPiece.col = move.start.col;
+  }
+
+  isKingAttacked(color) {
+    const king = this.getKing(color);
+    const enemyColor = color == "white" ? "black" : "white";
+    const enemyMoves = this.getPlayerMoves(enemyColor);
+    for (const move of enemyMoves) {
+      if (move.end.row == king.row && move.end.col == king.col) return true;
+    }
+    return false;
+  }
+
+  getKing(color) {
+    let king;
+    this.position.forEach((row) =>
+      row.forEach((piece) => {
+        if (piece.color == color && piece instanceof King) king = piece;
+      })
+    );
+    return king;
+  }
+
+  getPlayerMoves(color) {
+    let moves = [];
+    this.position.forEach((row) =>
+      row.forEach((piece) => {
+        if (piece.color == color) {
+          moves.push(piece.getMoves(this.position));
+        }
+      })
+    );
+    return moves.flat();
   }
 }
