@@ -125,7 +125,8 @@ class Game {
     // if (this.draggedPiece.color != this.turn) return;
 
     const { row, col } = this.getSquareFromMouse(e);
-    this.getAllMoves()
+
+    console.log(this.draggedPiece)
 
     const move = new Move(
       this.draggedPiece.row,
@@ -197,12 +198,16 @@ class Game {
     for (const row of this.position) {
       for (const piece of row) {
         if (piece.color == this.turn) {
-          allMoves.concat(piece.getMoves());
+          const pieceMoves = piece.getMoves(this.position);
+          for (const move of pieceMoves) {
+            allMoves.push(move);
+          }
         }
       }
     }
     return allMoves;
   }
+
   // isLegalMove(move, legalMoves) {
   //   for (const legalMove of legalMoves) {
   //     if (

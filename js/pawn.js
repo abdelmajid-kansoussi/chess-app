@@ -34,7 +34,7 @@ class Pawn extends Piece {
         moves.push(new Move(this.row, this.col, this.row + 1, this.col + 1));
       }
     } else {
-      // moving one stop up
+      // moving one step up
       if (this.row >= 1 && position[this.row - 1][this.col] == "") {
         moves.push(new Move(this.row, this.col, this.row - 1, this.col));
       }
