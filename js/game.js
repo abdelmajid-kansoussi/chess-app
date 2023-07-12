@@ -5,9 +5,13 @@ class Game {
     this.dragEnter = this.dragEnter.bind(this);
     this.dragStart = this.dragStart.bind(this);
     this.position = this.getStartPosition();
-    this.draggedPiece = null;
     this.turn = "white";
-    this.drawBoard();
+    this.startSquare = null;
+    this.whiteKingLocation = [7, 4];
+    this.blackKingLocation = [0, 4];
+    this.checkmate = false;
+    this.stalemate = false;
+    this.drawStartPosition();
   }
 
   getSquareName(row, col) {
@@ -37,7 +41,7 @@ class Game {
     return document.querySelector(`[data-name=${squareName}]`);
   }
 
-  drawBoard() {
+  drawStartPosition() {
     const boardElement = document.getElementById("board");
 
     this.position.forEach((row, i) => {
@@ -117,40 +121,40 @@ class Game {
   }
 
   dragStart(e) {
-    const { row, col } = this.getSquareFromMouse(e);
-    this.draggedPiece = this.position[row][col];
+    this.startSquare = this.getSquareFromMouse(e);
   }
 
   drop(e) {
-    // if (this.draggedPiece.color != this.turn) return;
-
-    const { row, col } = this.getSquareFromMouse(e);
-
-    console.log(this.draggedPiece)
+    const endSquare = this.getSquareFromMouse(e);
 
     const move = new Move(
-      this.draggedPiece.row,
-      this.draggedPiece.col,
-      row,
-      col
+      this.startSquare.row,
+      this.startSquare.col,
+      endSquare.row,
+      endSquare.col,
+      this.position
     );
 
-    // if (this.isLegalMove(move, this.draggedPiece.getMoves(this.position))) {
-    //   this.makeMove(move);
-    //   if (this.isKingAttacked(this.turn)) {
-    //     this.undoMove(move);
-    //     return;
-    //   } else {
-    //     squareElement.innerHTML = "";
-    //     squareElement.appendChild(this.draggedPieceElement);
-    //   }
-    // } else {
-    //   return;
-    // }
+    if (move.movedPiece.color != this.turn) return;
+
+    if (!this.isValidMove(move)) return;
 
     this.makeMove(move);
+    if (this.checkmate) console.log("game over");
+
+    const startSquareElement = this.getSquareElement(
+      move.startRow,
+      move.startCol
+    );
+
+    const endSquareElement = this.getSquareElement(move.endRow, move.endCol);
+    endSquareElement.innerHTML = "";
+    endSquareElement.appendChild(startSquareElement.firstChild);
+    startSquareElement.innerHTML = "";
 
     this.swapTurns();
+
+    this.startSquare = null;
   }
 
   dragOver(e) {
@@ -162,35 +166,37 @@ class Game {
   }
 
   makeMove(move) {
-    this.position[move.endRow][move.endCol] = this.draggedPiece;
+    this.position[move.endRow][move.endCol] = move.movedPiece;
     this.position[move.startRow][move.startCol] = "";
-    this.draggedPiece.row = move.endRow;
-    this.draggedPiece.col = move.endCol;
-    const startSquareElement = this.getSquareElement(
-      move.startRow,
-      move.startCol
-    );
-    const endSquareElement = this.getSquareElement(move.endRow, move.endCol);
-    endSquareElement.innerHTML = startSquareElement.innerHTML;
-    startSquareElement.innerHTML = "";
+
+    move.movedPiece.row = move.endRow;
+    move.movedPiece.col = move.endCol;
+
+    if (move.movedPiece.color == "white" && move.movedPiece instanceof King) {
+      this.whiteKingLocation = [move.endRow, move.endCol];
+    }
+    if (move.movedPiece.color == "black" && move.movedPiece instanceof King) {
+      this.blackKingLocation = [move.endRow, move.endCol];
+    }
+  }
+
+  undoMove(move) {
+    this.position[move.startRow][move.startCol] = move.movedPiece;
+    this.position[move.endRow][move.endCol] = move.capturedPiece;
+
+    move.movedPiece.row = move.startRow;
+    move.movedPiece.col = move.startCol;
+
+    if (move.movedPiece.color == "white" && move.movedPiece instanceof King) {
+      this.whiteKingLocation = [move.startRow, move.startCol];
+    }
+    if (move.movedPiece.color == "black" && move.movedPiece instanceof King) {
+      this.blackKingLocation = [move.startRow, move.startCol];
+    }
   }
 
   swapTurns() {
     this.turn = this.turn == "white" ? "black" : "white";
-  }
-
-  undoMove(move) {
-    this.position[move.startRow][move.startCol] = this.draggedPiece;
-    this.position[move.endRow][move.endCol] = "";
-    this.draggedPiece.row = move.startRow;
-    this.draggedPiece.col = move.startCol;
-    const startSquareElement = this.getSquareElement(
-      move.startRow,
-      move.startCol
-    );
-    const endSquareElement = this.getSquareElement(move.endRow, move.endCol);
-    startSquareElement.innerHTML = endSquareElement.innerHTML;
-    endSquareElement.innerHTML = "";
   }
 
   getAllMoves() {
@@ -199,56 +205,63 @@ class Game {
       for (const piece of row) {
         if (piece.color == this.turn) {
           const pieceMoves = piece.getMoves(this.position);
-          for (const move of pieceMoves) {
-            allMoves.push(move);
-          }
+          for (const move of pieceMoves) allMoves.push(move);
         }
       }
     }
     return allMoves;
   }
 
-  // isLegalMove(move, legalMoves) {
-  //   for (const legalMove of legalMoves) {
-  //     if (
-  //       move.end.col == legalMove.end.col &&
-  //       move.end.row == legalMove.end.row
-  //     ) {
-  //       return true;
-  //     }
-  //   }
-  //   return false;
-  // }
+  getValidMoves() {
+    let validMoves = [];
+    const allMoves = this.getAllMoves();
+    for (const move of allMoves) {
+      this.makeMove(move);
+      if (!this.isCheck()) validMoves.push(move);
+      this.undoMove(move);
+    }
 
-  // isKingAttacked(color) {
-  //   const king = this.getKing(color);
-  //   const enemyColor = color == "white" ? "black" : "white";
-  //   const enemyMoves = this.getPlayerMoves(enemyColor);
-  //   for (const move of enemyMoves) {
-  //     if (move.end.row == king.row && move.end.col == king.col) return true;
-  //   }
-  //   return false;
-  // }
+    if (validMoves.length == 0) {
+      if (this.isCheck()) this.checkmate = true;
+      else this.stalemate = true;
+    }
 
-  // getKing(KingColor) {
-  //   let king;
-  //   this.position.forEach((row) =>
-  //     row.forEach((piece) => {
-  //       if (piece.color == KingColor && piece instanceof King) king = piece;
-  //     })
-  //   );
-  //   return king;
-  // }
+    return validMoves;
+  }
 
-  // getPlayerMoves(playerColor) {
-  //   let moves = [];
-  //   this.position.forEach((row) =>
-  //     row.forEach((piece) => {
-  //       if (piece.color == playerColor) {
-  //         moves.push(piece.getMoves(this.position));
-  //       }
-  //     })
-  //   );
-  //   return moves.flat();
-  // }
+  isCheck() {
+    if (this.turn == "white") {
+      return this.isSquareAttacked(
+        this.whiteKingLocation[0],
+        this.whiteKingLocation[1]
+      );
+    } else {
+      return this.isSquareAttacked(
+        this.blackKingLocation[0],
+        this.blackKingLocation[1]
+      );
+    }
+  }
+
+  isSquareAttacked(row, col) {
+    this.swapTurns();
+    const opponentMoves = this.getAllMoves();
+    this.swapTurns();
+    for (const move of opponentMoves) {
+      if (move.endRow == row && move.endCol == col) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  isValidMove(move) {
+    const validMoves = this.getValidMoves();
+    for (const validMove of validMoves) {
+      if (move.endRow == validMove.endRow && move.endCol == validMove.endCol) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

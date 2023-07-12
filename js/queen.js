@@ -1,7 +1,7 @@
 class Queen extends Piece {
   constructor(row, col, color) {
     super(row, col, color);
-    this.imgSrc = `images/${this.color}-queen.png`
+    this.imgSrc = `images/${this.color}-queen.png`;
   }
 
   getMoves(position) {
@@ -33,14 +33,30 @@ class Queen extends Piece {
               this.col + i * direction[1]
             ] == ""
           ) {
-            moves.push(new Move(this.row, this.col, this.row + i * direction[0], this.col + i * direction[1]));
+            moves.push(
+              new Move(
+                this.row,
+                this.col,
+                this.row + i * direction[0],
+                this.col + i * direction[1],
+                position
+              )
+            );
             continue;
           }
           if (
             position[this.row + i * direction[0]][this.col + i * direction[1]]
               .color != this.color
           ) {
-            moves.push(new Move(this.row, this.col, this.row + i * direction[0], this.col + i * direction[1]));
+            moves.push(
+              new Move(
+                this.row,
+                this.col,
+                this.row + i * direction[0],
+                this.col + i * direction[1],
+                position
+              )
+            );
             break;
           }
           if (

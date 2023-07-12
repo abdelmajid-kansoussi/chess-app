@@ -34,7 +34,8 @@ class Knight extends Piece {
             this.row,
             this.col,
             this.row + direction[0],
-            this.col + direction[1]
+            this.col + direction[1],
+            position
           )
         );
       }

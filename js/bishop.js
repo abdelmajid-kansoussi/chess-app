@@ -1,7 +1,7 @@
 class Bishop extends Piece {
   constructor(row, col, color) {
     super(row, col, color);
-    this.imgSrc = `images/${this.color}-bishop.png`
+    this.imgSrc = `images/${this.color}-bishop.png`;
   }
 
   getMoves(position) {
@@ -35,7 +35,8 @@ class Bishop extends Piece {
                 this.row,
                 this.col,
                 this.row + i * direction[0],
-                this.col + i * direction[1]
+                this.col + i * direction[1],
+                position
               )
             );
             continue;
@@ -49,7 +50,8 @@ class Bishop extends Piece {
                 this.row,
                 this.col,
                 this.row + i * direction[0],
-                this.col + i * direction[1]
+                this.col + i * direction[1],
+                position
               )
             );
             break;

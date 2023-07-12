@@ -34,7 +34,8 @@ class Rook extends Piece {
                 this.row,
                 this.col,
                 this.row + i * direction[0],
-                this.col + i * direction[1]
+                this.col + i * direction[1],
+                position
               )
             );
             continue;
@@ -48,7 +49,8 @@ class Rook extends Piece {
                 this.row,
                 this.col,
                 this.row + i * direction[0],
-                this.col + i * direction[1]
+                this.col + i * direction[1],
+                position
               )
             );
             break;
