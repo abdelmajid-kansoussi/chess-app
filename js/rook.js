@@ -5,9 +5,6 @@ class Rook extends Piece {
   }
 
   getMoves(position) {
-    this.row = Number(this.row);
-    this.col = Number(this.col);
-
     let moves = [];
     const directions = [
       [0, 1],
@@ -24,41 +21,15 @@ class Rook extends Piece {
           this.col + i * direction[1] >= 0 &&
           this.col + i * direction[1] <= 7
         ) {
-          if (
-            position[this.row + i * direction[0]][
-              this.col + i * direction[1]
-            ] == ""
-          ) {
-            moves.push(
-              new Move(
-                this.row,
-                this.col,
-                this.row + i * direction[0],
-                this.col + i * direction[1],
-                position
-              )
-            );
+          if (position[this.row + i * direction[0]][this.col + i * direction[1]] == "") {
+            moves.push(new Move(this.row, this.col, this.row + i * direction[0], this.col + i * direction[1], position));
             continue;
           }
-          if (
-            position[this.row + i * direction[0]][this.col + i * direction[1]]
-              .color != this.color
-          ) {
-            moves.push(
-              new Move(
-                this.row,
-                this.col,
-                this.row + i * direction[0],
-                this.col + i * direction[1],
-                position
-              )
-            );
+          if (position[this.row + i * direction[0]][this.col + i * direction[1]].color != this.color) {
+            moves.push(new Move(this.row, this.col, this.row + i * direction[0], this.col + i * direction[1], position));
             break;
           }
-          if (
-            position[this.row + i * direction[0]][this.col + i * direction[1]]
-              .color == this.color
-          ) {
+          if (position[this.row + i * direction[0]][this.col + i * direction[1]].color == this.color) {
             break;
           }
         }

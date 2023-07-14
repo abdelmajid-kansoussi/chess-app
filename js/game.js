@@ -14,21 +14,6 @@ class Game {
     this.drawStartPosition();
   }
 
-  getSquareName(row, col) {
-    const colMap = {
-      0: "a",
-      1: "b",
-      2: "c",
-      3: "d",
-      4: "e",
-      5: "f",
-      6: "g",
-      7: "h",
-    };
-    const squareName = `${colMap[col]}${8 - row}`;
-    return squareName;
-  }
-
   getSquareFromMouse(e) {
     const boardRect = document.querySelector(".board").getBoundingClientRect();
     const col = Math.floor((e.clientX - boardRect.x) / (boardRect.width / 8));
@@ -37,8 +22,7 @@ class Game {
   }
 
   getSquareElement(row, col) {
-    const squareName = this.getSquareName(row, col);
-    return document.querySelector(`[data-name=${squareName}]`);
+    return document.querySelector(`[data-name="${row}-${col}"]`);
   }
 
   drawStartPosition() {
@@ -49,7 +33,7 @@ class Game {
         const squareElement = document.createElement("div");
         squareElement.classList.add("square");
         boardElement.appendChild(squareElement);
-        squareElement.dataset.name = this.getSquareName(i, j);
+        squareElement.dataset.name = `${i}-${j}`;
         squareElement.addEventListener("drop", this.drop);
         squareElement.addEventListener("dragenter", this.dragEnter);
         squareElement.addEventListener("dragover", this.dragOver);
@@ -127,30 +111,14 @@ class Game {
   drop(e) {
     const endSquare = this.getSquareFromMouse(e);
 
-    const move = new Move(
-      this.startSquare.row,
-      this.startSquare.col,
-      endSquare.row,
-      endSquare.col,
-      this.position
-    );
+    const move = new Move(this.startSquare.row, this.startSquare.col, endSquare.row, endSquare.col, this.position);
 
     if (move.movedPiece.color != this.turn) return;
 
     if (!this.isValidMove(move)) return;
 
     this.makeMove(move);
-    if (this.checkmate) console.log("game over");
-
-    const startSquareElement = this.getSquareElement(
-      move.startRow,
-      move.startCol
-    );
-
-    const endSquareElement = this.getSquareElement(move.endRow, move.endCol);
-    endSquareElement.innerHTML = "";
-    endSquareElement.appendChild(startSquareElement.firstChild);
-    startSquareElement.innerHTML = "";
+    this.lastMove = move;
 
     this.swapTurns();
 
@@ -178,6 +146,28 @@ class Game {
     if (move.movedPiece.color == "black" && move.movedPiece instanceof King) {
       this.blackKingLocation = [move.endRow, move.endCol];
     }
+
+    const endSquareElement = this.getSquareElement(move.endRow, move.endCol);
+    const startSquareElement = this.getSquareElement(move.startRow, move.startCol);
+
+    if (move.isPromotion) {
+      const promotionPiece = new Queen(move.endRow, move.endCol, move.movedPiece.color);
+      this.position[move.endCol][move.endCol] = promotionPiece;
+      startSquareElement.innerHTML = "";
+      endSquareElement.innerHTML = "";
+      this.createPieceElement(promotionPiece, endSquareElement);
+      return;
+    }
+
+    endSquareElement.innerHTML = "";
+    endSquareElement.appendChild(move.movedPieceElement);
+  }
+
+  createPieceElement(piece, squareElement) {
+    const pieceElement = document.createElement("img");
+    pieceElement.src = piece.imgSrc;
+    pieceElement.addEventListener("dragstart", this.dragStart);
+    squareElement.appendChild(pieceElement);
   }
 
   undoMove(move) {
@@ -193,6 +183,22 @@ class Game {
     if (move.movedPiece.color == "black" && move.movedPiece instanceof King) {
       this.blackKingLocation = [move.startRow, move.startCol];
     }
+    const startSquareElement = this.getSquareElement(move.startRow, move.startCol);
+    const endSquareElement = this.getSquareElement(move.endRow, move.endCol);
+
+    //////////////////////////////////////////////////////////////////////////
+    if (move.isPromotion) {
+      const promotionPiece = new Queen(move.endRow, move.endCol, move.movedPiece.color);
+      this.position[move.endCol][move.endCol] = promotionPiece;
+      startSquareElement.innerHTML = "";
+      endSquareElement.innerHTML = "";
+      this.createPieceElement(promotionPiece, endSquareElement);
+      return;
+    }
+    //////////////////////////////////////////////////////////////////////////
+
+    startSquareElement.appendChild(move.movedPieceElement);
+    if (move.capturedPiece) endSquareElement.appendChild(move.capturedPieceElement);
   }
 
   swapTurns() {
@@ -231,15 +237,9 @@ class Game {
 
   isCheck() {
     if (this.turn == "white") {
-      return this.isSquareAttacked(
-        this.whiteKingLocation[0],
-        this.whiteKingLocation[1]
-      );
+      return this.isSquareAttacked(this.whiteKingLocation[0], this.whiteKingLocation[1]);
     } else {
-      return this.isSquareAttacked(
-        this.blackKingLocation[0],
-        this.blackKingLocation[1]
-      );
+      return this.isSquareAttacked(this.blackKingLocation[0], this.blackKingLocation[1]);
     }
   }
 
@@ -258,7 +258,12 @@ class Game {
   isValidMove(move) {
     const validMoves = this.getValidMoves();
     for (const validMove of validMoves) {
-      if (move.endRow == validMove.endRow && move.endCol == validMove.endCol) {
+      if (
+        move.endRow == validMove.endRow &&
+        move.endCol == validMove.endCol &&
+        move.startRow == validMove.startRow &&
+        move.startCol == validMove.startCol
+      ) {
         return true;
       }
     }

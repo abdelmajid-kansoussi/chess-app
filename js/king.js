@@ -5,9 +5,6 @@ class King extends Piece {
   }
 
   getMoves(position) {
-    this.row = Number(this.row);
-    this.col = Number(this.col);
-
     let moves = [];
     const directions = [
       [-1, -1],
@@ -26,18 +23,9 @@ class King extends Piece {
         this.row + direction[0] <= 7 &&
         this.col + direction[1] >= 0 &&
         this.col + direction[1] <= 7 &&
-        position[this.row + direction[0]][this.col + direction[1]].color !=
-          this.color
+        position[this.row + direction[0]][this.col + direction[1]].color != this.color
       ) {
-        moves.push(
-          new Move(
-            this.row,
-            this.col,
-            this.row + direction[0],
-            this.col + direction[1],
-            position
-          )
-        );
+        moves.push(new Move(this.row, this.col, this.row + direction[0], this.col + direction[1], position));
       }
     }
     return moves;
