@@ -4,10 +4,6 @@
   box-sizing: border-box;
 }
 
-:root {
-  --board-width: 600px;
-  --board-height: 600px;
-}
 
 body {
   display: flex;
@@ -17,19 +13,3 @@ body {
   height: 100vh;
 }
 
-.board {
-  width: var(--board-width);
-  height: var(--board-height);
-  display:flex;
-  align-items:center;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.square {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: calc(var(--board-width) / 8);
-  height: calc(var(--board-height) / 8);
-}

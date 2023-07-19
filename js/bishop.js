@@ -1,10 +1,10 @@
 class Bishop extends Piece {
   constructor(row, col, color) {
     super(row, col, color);
-    this.imgSrc = `images/${this.color}-bishop.png`;
+    this.imgSrc = `images/${color}-bishop.png`;
   }
 
-  getMoves(position) {
+  getMoves(position, enPassantSquare = null) {
     let moves = [];
     const directions = [
       [1, 1],
@@ -15,21 +15,16 @@ class Bishop extends Piece {
 
     for (const direction of directions) {
       for (let i = 1; i <= 7; i++) {
-        if (
-          this.row + i * direction[0] >= 0 &&
-          this.row + i * direction[0] <= 7 &&
-          this.col + i * direction[1] >= 0 &&
-          this.col + i * direction[1] <= 7
-        ) {
-          if (position[this.row + i * direction[0]][this.col + i * direction[1]] == "") {
-            moves.push(new Move(this.row, this.col, this.row + i * direction[0], this.col + i * direction[1], position));
+        if (row + i * direction[0] >= 0 && row + i * direction[0] <= 7 && col + i * direction[1] >= 0 && col + i * direction[1] <= 7) {
+          if (position[row + i * direction[0]][col + i * direction[1]] == "") {
+            moves.push(new Move(row, col, row + i * direction[0], col + i * direction[1], position));
             continue;
           }
-          if (position[this.row + i * direction[0]][this.col + i * direction[1]].color != this.color) {
-            moves.push(new Move(this.row, this.col, this.row + i * direction[0], this.col + i * direction[1], position));
+          if (position[row + i * direction[0]][col + i * direction[1]].color != color) {
+            moves.push(new Move(row, col, row + i * direction[0], col + i * direction[1], position));
             break;
           }
-          if (position[this.row + i * direction[0]][this.col + i * direction[1]].color == this.color) {
+          if (position[row + i * direction[0]][col + i * direction[1]].color == color) {
             break;
           }
         }

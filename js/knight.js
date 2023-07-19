@@ -1,10 +1,10 @@
 class Knight extends Piece {
   constructor(row, col, color) {
     super(row, col, color);
-    this.imgSrc = `images/${this.color}-knight.png`;
+    this.imgSrc = `images/${color}-knight.png`;
   }
 
-  getMoves(position) {
+  getMoves(position, enPassantSquare = null) {
     let moves = [];
     const directions = [
       [-2, -1],
@@ -19,13 +19,13 @@ class Knight extends Piece {
 
     for (const direction of directions) {
       if (
-        this.row + direction[0] >= 0 &&
-        this.row + direction[0] <= 7 &&
-        this.col + direction[1] >= 0 &&
-        this.col + direction[1] <= 7 &&
-        position[this.row + direction[0]][this.col + direction[1]].color != this.color
+        row + direction[0] >= 0 &&
+        row + direction[0] <= 7 &&
+        col + direction[1] >= 0 &&
+        col + direction[1] <= 7 &&
+        position[row + direction[0]][col + direction[1]].color != color
       ) {
-        moves.push(new Move(this.row, this.col, this.row + direction[0], this.col + direction[1], position));
+        moves.push(new Move(row, col, row + direction[0], col + direction[1], position));
       }
     }
     return moves;

@@ -1,217 +1,393 @@
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+canvas.width = 600;
+canvas.height = 600;
+
 class Game {
   constructor() {
-    this.drop = this.drop.bind(this);
-    this.dragOver = this.dragOver.bind(this);
-    this.dragEnter = this.dragEnter.bind(this);
-    this.dragStart = this.dragStart.bind(this);
-    this.position = this.getStartPosition();
-    this.turn = "white";
-    this.startSquare = null;
+    this.turn = "w";
+
+    this.firstClickedSquare = null;
+    this.secondClickedSquare = null;
+    this.hasClickedSquare = false;
+
     this.whiteKingLocation = [7, 4];
     this.blackKingLocation = [0, 4];
+
     this.checkmate = false;
     this.stalemate = false;
-    this.drawStartPosition();
+
+    this.enPassantSquare = null;
+
+    this.position = this.getStartPosition();
+    this.drawPosition();
+
+    this.handleClick = this.handleClick.bind(this);
+    canvas.addEventListener("click", this.handleClick);
   }
 
-  getSquareFromMouse(e) {
-    const boardRect = document.querySelector(".board").getBoundingClientRect();
-    const col = Math.floor((e.clientX - boardRect.x) / (boardRect.width / 8));
-    const row = Math.floor((e.clientY - boardRect.y) / (boardRect.width / 8));
+  getClickedSquare(e) {
+    const boardRect = canvas.getBoundingClientRect();
+    const squareSize = canvas.width / 8;
+    const col = Math.floor((e.clientX - boardRect.x) / squareSize);
+    const row = Math.floor((e.clientY - boardRect.y) / squareSize);
     return { row, col };
   }
 
-  getSquareElement(row, col) {
-    return document.querySelector(`[data-name="${row}-${col}"]`);
-  }
+  drawPosition() {
+    const squareSize = canvas.width / 8;
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        // drawing the square
+        if (i % 2 == j % 2) ctx.fillStyle = "red";
+        else ctx.fillStyle = "green";
+        ctx.fillRect(j * squareSize, i * squareSize, squareSize, squareSize);
 
-  drawStartPosition() {
-    const boardElement = document.getElementById("board");
-
-    this.position.forEach((row, i) => {
-      row.forEach((piece, j) => {
-        const squareElement = document.createElement("div");
-        squareElement.classList.add("square");
-        boardElement.appendChild(squareElement);
-        squareElement.dataset.name = `${i}-${j}`;
-        squareElement.addEventListener("drop", this.drop);
-        squareElement.addEventListener("dragenter", this.dragEnter);
-        squareElement.addEventListener("dragover", this.dragOver);
-
-        if (i % 2 == j % 2) {
-          squareElement.style.backgroundColor = "green";
-        } else {
-          squareElement.style.backgroundColor = "red";
-        }
-
-        if (piece != "") {
-          const pieceElement = document.createElement("img");
-          pieceElement.draggable = true;
-          pieceElement.src = piece.imgSrc;
-          squareElement.appendChild(pieceElement);
-          pieceElement.addEventListener("dragstart", this.dragStart);
-        }
-      });
-    });
+        // drawing the piece
+        const piece = this.position[i][j];
+        if (piece == "--") continue;
+        const pieceImage = new Image();
+        pieceImage.src = `images/${piece}.png`;
+        pieceImage.addEventListener("load", () => {
+          ctx.drawImage(pieceImage, j * squareSize, i * squareSize, squareSize, squareSize);
+        });
+      }
+    }
   }
 
   getStartPosition() {
     return [
-      [
-        new Rook(0, 0, "black"),
-        new Knight(0, 1, "black"),
-        new Bishop(0, 2, "black"),
-        new Queen(0, 3, "black"),
-        new King(0, 4, "black"),
-        new Bishop(0, 5, "black"),
-        new Knight(0, 6, "black"),
-        new Rook(0, 7, "black"),
-      ],
-      [
-        new Pawn(1, 0, "black"),
-        new Pawn(1, 1, "black"),
-        new Pawn(1, 2, "black"),
-        new Pawn(1, 3, "black"),
-        new Pawn(1, 4, "black"),
-        new Pawn(1, 5, "black"),
-        new Pawn(1, 6, "black"),
-        new Pawn(1, 7, "black"),
-      ],
-      ["", "", "", "", "", "", "", ""],
-      ["", "", "", "", "", "", "", ""],
-      ["", "", "", "", "", "", "", ""],
-      ["", "", "", "", "", "", "", ""],
-      [
-        new Pawn(6, 0, "white"),
-        new Pawn(6, 1, "white"),
-        new Pawn(6, 2, "white"),
-        new Pawn(6, 3, "white"),
-        new Pawn(6, 4, "white"),
-        new Pawn(6, 5, "white"),
-        new Pawn(6, 6, "white"),
-        new Pawn(6, 7, "white"),
-      ],
-      [
-        new Rook(7, 0, "white"),
-        new Knight(7, 1, "white"),
-        new Bishop(7, 2, "white"),
-        new Queen(7, 3, "white"),
-        new King(7, 4, "white"),
-        new Bishop(7, 5, "white"),
-        new Knight(7, 6, "white"),
-        new Rook(7, 7, "white"),
-      ],
+      ["br", "bn", "bb", "bq", "bk", "bb", "bn", "br"],
+      ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
+      ["--", "--", "--", "--", "--", "--", "--", "--"],
+      ["--", "--", "--", "--", "--", "--", "--", "--"],
+      ["--", "--", "--", "--", "--", "--", "--", "--"],
+      ["--", "--", "--", "--", "--", "--", "--", "--"],
+      ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
+      ["wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr"],
     ];
   }
 
-  dragStart(e) {
-    this.startSquare = this.getSquareFromMouse(e);
-  }
+  handleClick(e) {
+    if (this.hasClickedSquare) {
+      this.secondClickedSquare = this.getClickedSquare(e);
+      const { row: endRow, col: endCol } = this.secondClickedSquare;
+      const { row: startRow, col: startCol } = this.firstClickedSquare;
+      const move = new Move(startRow, startCol, endRow, endCol, this.position);
 
-  drop(e) {
-    const endSquare = this.getSquareFromMouse(e);
+      if (move.movedPiece[0] != this.turn || !this.isValidMove(move)) {
+        console.log("not valid move");
+        this.hasClickedSquare = false;
+      } else {
+        this.makeMove(move);
+        this.drawPosition();
+        this.swapTurns();
 
-    const move = new Move(this.startSquare.row, this.startSquare.col, endSquare.row, endSquare.col, this.position);
-
-    if (move.movedPiece.color != this.turn) return;
-
-    if (!this.isValidMove(move)) return;
-
-    this.makeMove(move);
-    this.lastMove = move;
-
-    this.swapTurns();
-
-    this.startSquare = null;
-  }
-
-  dragOver(e) {
-    e.preventDefault();
-  }
-
-  dragEnter(e) {
-    e.preventDefault();
+        this.firstClickedSquare = null;
+        this.secondClickedSquare = null;
+        this.hasClickedSquare = false;
+      }
+    } else {
+      this.firstClickedSquare = this.getClickedSquare(e);
+      this.hasClickedSquare = true;
+    }
   }
 
   makeMove(move) {
-    this.position[move.endRow][move.endCol] = move.movedPiece;
-    this.position[move.startRow][move.startCol] = "";
-
-    move.movedPiece.row = move.endRow;
-    move.movedPiece.col = move.endCol;
-
-    if (move.movedPiece.color == "white" && move.movedPiece instanceof King) {
+    // Updating kings locations
+    if (move.movedPiece == "wk") {
       this.whiteKingLocation = [move.endRow, move.endCol];
     }
-    if (move.movedPiece.color == "black" && move.movedPiece instanceof King) {
+    if (move.movedPiece == "bk") {
       this.blackKingLocation = [move.endRow, move.endCol];
     }
 
-    const endSquareElement = this.getSquareElement(move.endRow, move.endCol);
-    const startSquareElement = this.getSquareElement(move.startRow, move.startCol);
+    this.position[move.endRow][move.endCol] = move.movedPiece;
+    this.position[move.startRow][move.startCol] = "--";
 
-    if (move.isPromotion) {
-      const promotionPiece = new Queen(move.endRow, move.endCol, move.movedPiece.color);
-      this.position[move.endCol][move.endCol] = promotionPiece;
-      startSquareElement.innerHTML = "";
-      endSquareElement.innerHTML = "";
-      this.createPieceElement(promotionPiece, endSquareElement);
-      return;
-    }
+    // // Promotion
+    // if (move.isPromotion) {
+    //   const promotionPiece = new Queen(move.endRow, move.endCol, move.movedPiece.color);
+    //   this.position[move.endRow][move.endCol] = promotionPiece;
+    // }
 
-    endSquareElement.innerHTML = "";
-    endSquareElement.appendChild(move.movedPieceElement);
-  }
+    // // En passant
+    // if (move.movedPiece instanceof Pawn && move.startRow == 1 && move.endRow == 3) {
+    //   this.enPassantSquare = { row: 2, col: move.startCol };
+    // } else if (move.movedPiece instanceof Pawn && move.startRow == 6 && move.endRow == 4) {
+    //   this.enPassantSquare = { row: 5, col: move.startCol };
+    // } else {
+    //   this.enPassantSquare = null;
+    // }
 
-  createPieceElement(piece, squareElement) {
-    const pieceElement = document.createElement("img");
-    pieceElement.src = piece.imgSrc;
-    pieceElement.addEventListener("dragstart", this.dragStart);
-    squareElement.appendChild(pieceElement);
+    // if (move.isEnPassant) {
+    //   if (move.movedPiece.color == "white") {
+    //     this.position[this.enPassantSquare.row][this.enPassantSquare.col] = move.movedPiece;
+    //     this.position[this.enPassantSquare.row + 1][this.enPassantSquare.col] = "";
+    //     this.position[move.startRow][move.startCol] = "";
+    //   } else {
+    //     this.position[this.enPassantSquare.row][this.enPassantSquare.col] = move.movedPiece;
+    //     this.position[this.enPassantSquare.row - 1][this.enPassantSquare.col] = "";
+    //     this.position[move.startRow][move.startCol] = "";
+    //   }
+    // }
   }
 
   undoMove(move) {
-    this.position[move.startRow][move.startCol] = move.movedPiece;
-    this.position[move.endRow][move.endCol] = move.capturedPiece;
-
-    move.movedPiece.row = move.startRow;
-    move.movedPiece.col = move.startCol;
-
-    if (move.movedPiece.color == "white" && move.movedPiece instanceof King) {
+    if (move.movedPiece == "wk") {
       this.whiteKingLocation = [move.startRow, move.startCol];
     }
-    if (move.movedPiece.color == "black" && move.movedPiece instanceof King) {
+    if (move.movedPiece == "bk") {
       this.blackKingLocation = [move.startRow, move.startCol];
     }
-    const startSquareElement = this.getSquareElement(move.startRow, move.startCol);
-    const endSquareElement = this.getSquareElement(move.endRow, move.endCol);
-
-    //////////////////////////////////////////////////////////////////////////
-    if (move.isPromotion) {
-      const promotionPiece = new Queen(move.endRow, move.endCol, move.movedPiece.color);
-      this.position[move.endCol][move.endCol] = promotionPiece;
-      startSquareElement.innerHTML = "";
-      endSquareElement.innerHTML = "";
-      this.createPieceElement(promotionPiece, endSquareElement);
-      return;
-    }
-    //////////////////////////////////////////////////////////////////////////
-
-    startSquareElement.appendChild(move.movedPieceElement);
-    if (move.capturedPiece) endSquareElement.appendChild(move.capturedPieceElement);
+    // if (move.isEnPassant) {
+    //   if (move.movedPiece.color == "white") {
+    //     this.position[this.enPassantSquare.row][this.enPassantSquare.col] = "";
+    //     this.position[move.startRow][move.startCol] = move.movedPiece;
+    //     this.position[this.enPassantSquare.row + 1][this.enPassantSquare.col] = move.capturedPiece;
+    //   } else {
+    //     this.position[this.enPassantSquare.row][this.enPassantSquare.col] = "";
+    //     this.position[move.startRow][move.startCol] = move.movedPiece;
+    //     this.position[this.enPassantSquare.row - 1][this.enPassantSquare.col] = move.capturedPiece;
+    //   }
+    // } else {
+    this.position[move.startRow][move.startCol] = move.movedPiece;
+    this.position[move.endRow][move.endCol] = move.capturedPiece;
+    // }
   }
 
   swapTurns() {
-    this.turn = this.turn == "white" ? "black" : "white";
+    this.turn = this.turn == "w" ? "b" : "w";
+  }
+
+  getPawnMoves(row, col) {
+    let moves = [];
+    // white pawn
+    if (this.turn == "b") {
+      // moving one square
+      if (row + 1 < 8 && this.position[row + 1][col] == "--") {
+        moves.push(new Move(row, col, row + 1, col, this.position));
+      }
+      // moving two squares
+      if (row == 1 && this.position[row + 2][col] == "--") {
+        moves.push(new Move(row, col, row + 2, col, this.position));
+      }
+      // capturing to the left
+      if (row + 1 < 8 && col >= 1 && this.position[row + 1][col - 1][0] == "w") {
+        moves.push(new Move(row, col, row + 1, col - 1, this.position));
+      }
+      // capturing to the right
+      if (row + 1 < 8 && col + 1 < 8 && this.position[row + 1][col + 1][0] == "w") {
+        moves.push(new Move(row, col, row + 1, col + 1, this.position));
+      }
+      // // En passant
+      // if (enPassantSquare != null) {
+      //   moves.push(new Move(row, col, enPassantSquare.row, enPassantSquare.col, position, enPassantSquare));
+      // }
+    }
+    // black pawn
+    else {
+      // moving one square
+      if (row - 1 >= 0 && this.position[row - 1][col] == "--") {
+        moves.push(new Move(row, col, row - 1, col, this.position));
+      }
+      // moving two squares
+      if (row == 6 && this.position[row - 2][col] == "--") {
+        moves.push(new Move(row, col, row - 2, col, this.position));
+      }
+      // capturing to the left
+      if (row - 1 >= 0 && col - 1 >= 0 && this.position[row - 1][col - 1][0] == "b") {
+        moves.push(new Move(row, col, row - 1, col - 1, this.position));
+      }
+      // capturint to the right
+      if (row - 1 >= 0 && col + 1 < 8 && this.position[row - 1][col + 1][0] == "b") {
+        moves.push(new Move(row, col, row - 1, col + 1, this.position));
+      }
+      // if (enPassantSquare != null) {
+      //   moves.push(new Move(row, col, enPassantSquare.row, enPassantSquare.col, position, enPassantSquare));
+      // }
+    }
+    return moves;
+  }
+
+  getKnightMoves(row, col) {
+    let moves = [];
+    const directions = [
+      [-2, -1],
+      [-2, 1],
+      [-1, -2],
+      [-1, 2],
+      [1, -2],
+      [1, 2],
+      [2, -1],
+      [2, 1],
+    ];
+
+    for (const direction of directions) {
+      if (
+        row + direction[0] >= 0 &&
+        row + direction[0] < 8 &&
+        col + direction[1] >= 0 &&
+        col + direction[1] < 8 &&
+        this.position[row + direction[0]][col + direction[1]][0] != this.turn
+      ) {
+        moves.push(new Move(row, col, row + direction[0], col + direction[1], this.position));
+      }
+    }
+    return moves;
+  }
+
+  getRookMoves(row, col) {
+    let moves = [];
+    const directions = [
+      [0, 1],
+      [0, -1],
+      [1, 0],
+      [-1, 0],
+    ];
+
+    for (const direction of directions) {
+      for (let i = 1; i <= 8; i++) {
+        if (row + i * direction[0] >= 0 && row + i * direction[0] <= 7 && col + i * direction[1] >= 0 && col + i * direction[1] <= 7) {
+          if (this.position[row + i * direction[0]][col + i * direction[1]] == "--") {
+            moves.push(new Move(row, col, row + i * direction[0], col + i * direction[1], this.position));
+            continue;
+          }
+          if (this.position[row + i * direction[0]][col + i * direction[1]][0] != this.turn) {
+            moves.push(new Move(row, col, row + i * direction[0], col + i * direction[1], this.position));
+            break;
+          }
+          if (this.position[row + i * direction[0]][col + i * direction[1]][0] == this.turn) {
+            break;
+          }
+        }
+      }
+    }
+
+    return moves;
+  }
+
+  getKingMoves(row, col) {
+    let moves = [];
+    const directions = [
+      [-1, -1],
+      [-1, 0],
+      [-1, 1],
+      [0, -1],
+      [0, 1],
+      [1, -1],
+      [1, 0],
+      [1, 1],
+    ];
+
+    for (const direction of directions) {
+      if (
+        row + direction[0] >= 0 &&
+        row + direction[0] <= 7 &&
+        col + direction[1] >= 0 &&
+        col + direction[1] <= 7 &&
+        this.position[row + direction[0]][col + direction[1]][0] != this.turn
+      ) {
+        moves.push(new Move(row, col, row + direction[0], col + direction[1], this.position));
+      }
+    }
+    return moves;
+  }
+
+  getQueenMoves(row, col) {
+    let moves = [];
+    const directions = [
+      [0, 1],
+      [0, -1],
+      [1, 0],
+      [-1, 0],
+      [1, 1],
+      [1, -1],
+      [-1, 1],
+      [-1, -1],
+    ];
+
+    for (const direction of directions) {
+      for (let i = 1; i <= 7; i++) {
+        if (row + i * direction[0] >= 0 && row + i * direction[0] <= 7 && col + i * direction[1] >= 0 && col + i * direction[1] <= 7) {
+          if (this.position[row + i * direction[0]][col + i * direction[1]] == "--") {
+            moves.push(new Move(row, col, row + i * direction[0], col + i * direction[1], this.position));
+            continue;
+          }
+          if (this.position[row + i * direction[0]][col + i * direction[1]][0] != this.turn) {
+            moves.push(new Move(row, col, row + i * direction[0], col + i * direction[1], this.position));
+            break;
+          }
+          if (this.position[row + i * direction[0]][col + i * direction[1]][0] == this.turn) {
+            break;
+          }
+        }
+      }
+    }
+
+    return moves;
+  }
+
+  getBishopMoves(row, col) {
+    let moves = [];
+    const directions = [
+      [1, 1],
+      [1, -1],
+      [-1, 1],
+      [-1, -1],
+    ];
+
+    for (const direction of directions) {
+      for (let i = 1; i <= 7; i++) {
+        if (row + i * direction[0] >= 0 && row + i * direction[0] <= 7 && col + i * direction[1] >= 0 && col + i * direction[1] <= 7) {
+          if (this.position[row + i * direction[0]][col + i * direction[1]] == "--") {
+            moves.push(new Move(row, col, row + i * direction[0], col + i * direction[1], this.position));
+            continue;
+          }
+          if (this.position[row + i * direction[0]][col + i * direction[1]][0] != this.turn) {
+            moves.push(new Move(row, col, row + i * direction[0], col + i * direction[1], this.position));
+            break;
+          }
+          if (this.position[row + i * direction[0]][col + i * direction[1]][0] == this.turn) {
+            break;
+          }
+        }
+      }
+    }
+
+    return moves;
   }
 
   getAllMoves() {
     let allMoves = [];
-    for (const row of this.position) {
-      for (const piece of row) {
-        if (piece.color == this.turn) {
-          const pieceMoves = piece.getMoves(this.position);
-          for (const move of pieceMoves) allMoves.push(move);
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        const piece = this.position[i][j];
+        if (piece[0] == this.turn) {
+          let pieceMoves = [];
+          switch (piece[1]) {
+            case "p":
+              pieceMoves = this.getPawnMoves(i, j);
+              break;
+            case "r":
+              pieceMoves = this.getRookMoves(i, j);
+              break;
+            case "b":
+              pieceMoves = this.getBishopMoves(i, j);
+              break;
+            case "n":
+              pieceMoves = this.getKnightMoves(i, j);
+              break;
+            case "q":
+              pieceMoves = this.getQueenMoves(i, j);
+              break;
+            case "k":
+              pieceMoves = this.getKingMoves(i, j);
+              break;
+          }
+          for (let move of pieceMoves) {
+            allMoves.push(move);
+          }
         }
       }
     }
@@ -236,7 +412,7 @@ class Game {
   }
 
   isCheck() {
-    if (this.turn == "white") {
+    if (this.turn == "w") {
       return this.isSquareAttacked(this.whiteKingLocation[0], this.whiteKingLocation[1]);
     } else {
       return this.isSquareAttacked(this.blackKingLocation[0], this.blackKingLocation[1]);
@@ -269,4 +445,6 @@ class Game {
     }
     return false;
   }
+
+  
 }
