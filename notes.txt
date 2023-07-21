@@ -1,6 +1,0 @@
-To know the type of the piece use instanceof
-example:
-To know if a piece is king use: piece instanceof King
-
-
-a better name for legal Move is hasMove and put it in the piece class

@@ -1,3 +1,4 @@
+
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 canvas.width = 600;
@@ -24,6 +25,11 @@ class Game {
 
     this.handleClick = this.handleClick.bind(this);
     canvas.addEventListener("click", this.handleClick);
+
+    this.enPassantSquare = null;
+
+    this.currentCastleRights = new CastleRights(true, true, true, true);
+    this.castleRightsHistory = [this.currentCastleRights];
   }
 
   getClickedSquare(e) {
@@ -73,20 +79,24 @@ class Game {
       this.secondClickedSquare = this.getClickedSquare(e);
       const { row: endRow, col: endCol } = this.secondClickedSquare;
       const { row: startRow, col: startCol } = this.firstClickedSquare;
-      const move = new Move(startRow, startCol, endRow, endCol, this.position);
+      const validMoves = this.getValidMoves();
+      let moveMade = false;
 
-      if (move.movedPiece[0] != this.turn || !this.isValidMove(move)) {
-        console.log("not valid move");
-        this.hasClickedSquare = false;
-      } else {
-        this.makeMove(move);
-        this.drawPosition();
-        this.swapTurns();
+      for (const move of validMoves) {
+        if (move.startRow == startRow && move.startCol == startCol && move.endCol == endCol && move.endRow == endRow) {
+          this.makeMove(move);
+          this.drawPosition();
+          this.swapTurns();
 
-        this.firstClickedSquare = null;
-        this.secondClickedSquare = null;
-        this.hasClickedSquare = false;
+          moveMade = true;
+          this.firstClickedSquare = null;
+          this.secondClickedSquare = null;
+          this.hasClickedSquare = false;
+          break;
+        }
       }
+
+      if (moveMade) this.hasClickedSquare = false;
     } else {
       this.firstClickedSquare = this.getClickedSquare(e);
       this.hasClickedSquare = true;
@@ -94,7 +104,6 @@ class Game {
   }
 
   makeMove(move) {
-    // Updating kings locations
     if (move.movedPiece == "wk") {
       this.whiteKingLocation = [move.endRow, move.endCol];
     }
@@ -105,32 +114,80 @@ class Game {
     this.position[move.endRow][move.endCol] = move.movedPiece;
     this.position[move.startRow][move.startCol] = "--";
 
-    // // Promotion
-    // if (move.isPromotion) {
-    //   const promotionPiece = new Queen(move.endRow, move.endCol, move.movedPiece.color);
-    //   this.position[move.endRow][move.endCol] = promotionPiece;
-    // }
+    if (move.isEnPassant) {
+      this.position[move.startRow][move.endCol] = "--";
+    }
 
-    // // En passant
-    // if (move.movedPiece instanceof Pawn && move.startRow == 1 && move.endRow == 3) {
-    //   this.enPassantSquare = { row: 2, col: move.startCol };
-    // } else if (move.movedPiece instanceof Pawn && move.startRow == 6 && move.endRow == 4) {
-    //   this.enPassantSquare = { row: 5, col: move.startCol };
-    // } else {
-    //   this.enPassantSquare = null;
-    // }
+    if (move.isPromotion) {
+      if (this.turn == "w") {
+        this.position[move.endRow][move.endCol] = "wq";
+      } else {
+        this.position[move.endRow][move.endCol] = "bq";
+      }
+    }
 
-    // if (move.isEnPassant) {
-    //   if (move.movedPiece.color == "white") {
-    //     this.position[this.enPassantSquare.row][this.enPassantSquare.col] = move.movedPiece;
-    //     this.position[this.enPassantSquare.row + 1][this.enPassantSquare.col] = "";
-    //     this.position[move.startRow][move.startCol] = "";
-    //   } else {
-    //     this.position[this.enPassantSquare.row][this.enPassantSquare.col] = move.movedPiece;
-    //     this.position[this.enPassantSquare.row - 1][this.enPassantSquare.col] = "";
-    //     this.position[move.startRow][move.startCol] = "";
-    //   }
-    // }
+    if (move.movedPiece[1] == "p" && Math.abs(move.endRow - move.startRow) == 2) {
+      if (move.movedPiece[0] == "w") {
+        this.enPassantSquare = { row: 5, col: move.endCol };
+      } else {
+        this.enPassantSquare = { row: 2, col: move.endCol };
+      }
+    } else {
+      this.enPassantSquare = null;
+    }
+
+    if (move.isCastling) {
+      if (move.endCol - move.startCol == 2) {
+        // castling kingside
+        this.position[move.endRow][move.endCol - 1] = this.position[move.endRow][move.endCol + 1];
+        this.position[move.endRow][move.endCol + 1] = "--";
+      } else {
+        // castling queenside
+        this.position[move.endRow][move.endCol + 1] = this.position[move.endRow][move.endCol - 2];
+        this.position[move.endRow][move.endCol - 2] = "--";
+      }
+    }
+
+    // update castling rights
+    this.updateCastleRights(move);
+  }
+
+  updateCastleRights(move) {
+    this.currentCastleRights = new CastleRights(
+      this.currentCastleRights.wqs,
+      this.currentCastleRights.wks,
+      this.currentCastleRights.bqs,
+      this.currentCastleRights.bks
+    );
+    if (move.movedPiece == "wk") {
+      this.currentCastleRights.wks = false;
+      this.currentCastleRights.wqs = false;
+    }
+    if (move.movedPiece == "bk") {
+      this.currentCastleRights.bks = false;
+      this.currentCastleRights.bqs = false;
+    }
+    if (move.movedPiece == "wr") {
+      // right rook
+      if (move.startRow == 7 && move.startCol == 7) {
+        this.currentCastleRights.wks = false;
+      }
+      // left rook
+      if (move.startRow == 7 && move.startCol == 0) {
+        this.currentCastleRights.wqs = false;
+      }
+    }
+    if (move.movedPiece == "br") {
+      // right rook
+      if (move.startRow == 0 && move.startCol == 7) {
+        this.currentCastleRights.bks = false;
+      }
+      // left rook
+      if (move.startRow == 0 && move.startCol == 0) {
+        this.currentCastleRights.bqs = false;
+      }
+    }
+    this.castleRightsHistory.push(this.currentCastleRights);
   }
 
   undoMove(move) {
@@ -140,20 +197,36 @@ class Game {
     if (move.movedPiece == "bk") {
       this.blackKingLocation = [move.startRow, move.startCol];
     }
-    // if (move.isEnPassant) {
-    //   if (move.movedPiece.color == "white") {
-    //     this.position[this.enPassantSquare.row][this.enPassantSquare.col] = "";
-    //     this.position[move.startRow][move.startCol] = move.movedPiece;
-    //     this.position[this.enPassantSquare.row + 1][this.enPassantSquare.col] = move.capturedPiece;
-    //   } else {
-    //     this.position[this.enPassantSquare.row][this.enPassantSquare.col] = "";
-    //     this.position[move.startRow][move.startCol] = move.movedPiece;
-    //     this.position[this.enPassantSquare.row - 1][this.enPassantSquare.col] = move.capturedPiece;
-    //   }
-    // } else {
+
     this.position[move.startRow][move.startCol] = move.movedPiece;
     this.position[move.endRow][move.endCol] = move.capturedPiece;
-    // }
+
+    if (move.isEnPassant) {
+      this.position[move.endRow][move.endCol] = "--";
+      this.position[move.startRow][move.endCol] = move.capturedPiece;
+      this.enPassantSquare = { row: move.endRow, col: move.endCol };
+    }
+
+    if (move.movedPiece[1] == "p" && Math.abs(move.endRow - move.startRow) == 2) {
+      this.enPassantSquare = null;
+    }
+
+    // update castling rights:
+    this.castleRightsHistory.pop();
+    this.currentCastleRights = this.castleRightsHistory[this.castleRightsHistory.length - 1];
+
+    // castling
+    if (move.isCastling) {
+      if (move.endCol - move.startCol == 2) {
+        // castling kingside
+        this.position[move.endRow][move.endCol + 1] = this.position[move.endRow][move.endCol - 1];
+        this.position[move.endRow][move.endCol - 1] = "--";
+      } else {
+        // castling queenside
+        this.position[move.endRow][move.endCol - 2] = this.position[move.endRow][move.endCol + 1];
+        this.position[move.endRow][move.endCol + 1] = "--";
+      }
+    }
   }
 
   swapTurns() {
@@ -162,7 +235,7 @@ class Game {
 
   getPawnMoves(row, col) {
     let moves = [];
-    // white pawn
+    // black pawn
     if (this.turn == "b") {
       // moving one square
       if (row + 1 < 8 && this.position[row + 1][col] == "--") {
@@ -180,12 +253,19 @@ class Game {
       if (row + 1 < 8 && col + 1 < 8 && this.position[row + 1][col + 1][0] == "w") {
         moves.push(new Move(row, col, row + 1, col + 1, this.position));
       }
-      // // En passant
-      // if (enPassantSquare != null) {
-      //   moves.push(new Move(row, col, enPassantSquare.row, enPassantSquare.col, position, enPassantSquare));
-      // }
+      // En passant
+      if (this.enPassantSquare != null) {
+        // the enPassant square is on the right of the pawn
+        if (row + 1 == this.enPassantSquare.row && col + 1 == this.enPassantSquare.col) {
+          moves.push(new Move(row, col, row + 1, col + 1, this.position, true));
+        }
+        // the enPassant square is on the left of the pawn
+        if (row + 1 == this.enPassantSquare.row && col - 1 == this.enPassantSquare.col) {
+          moves.push(new Move(row, col, row + 1, col - 1, this.position, true));
+        }
+      }
     }
-    // black pawn
+    // white pawn
     else {
       // moving one square
       if (row - 1 >= 0 && this.position[row - 1][col] == "--") {
@@ -203,9 +283,17 @@ class Game {
       if (row - 1 >= 0 && col + 1 < 8 && this.position[row - 1][col + 1][0] == "b") {
         moves.push(new Move(row, col, row - 1, col + 1, this.position));
       }
-      // if (enPassantSquare != null) {
-      //   moves.push(new Move(row, col, enPassantSquare.row, enPassantSquare.col, position, enPassantSquare));
-      // }
+      // En passant
+      if (this.enPassantSquare != null) {
+        // the enPassant square is on the right of the pawn
+        if (row - 1 == this.enPassantSquare.row && col + 1 == this.enPassantSquare.col) {
+          moves.push(new Move(row, col, row - 1, col + 1, this.position, this.enPassantSquare));
+        }
+        // the enPassant square is on the left of the pawn
+        if (row - 1 == this.enPassantSquare.row && col - 1 == this.enPassantSquare.col) {
+          moves.push(new Move(row, col, row - 1, col - 1, this.position, this.enPassantSquare));
+        }
+      }
     }
     return moves;
   }
@@ -291,6 +379,7 @@ class Game {
         moves.push(new Move(row, col, row + direction[0], col + direction[1], this.position));
       }
     }
+
     return moves;
   }
 
@@ -358,6 +447,38 @@ class Game {
     return moves;
   }
 
+  getCastleKingsideMove(row, col, moves) {
+    if (this.isSquareAttacked(row, col)) return;
+    if (this.position[row][col + 1] != "--" || this.position[row][col + 2] != "--") return;
+    if (this.isSquareAttacked(row, col + 1) || this.isSquareAttacked(row, col + 2)) return;
+    return moves.push(new Move(row, col, row, col + 2, this.position, this.enPassantSquare, true));
+  }
+
+  getCastleQueensideMove(row, col, moves) {
+    if (this.isSquareAttacked(row, col)) return;
+    if (this.position[row][col - 1] != "--" || this.position[row][col - 2] != "--" || this.position[row][col - 3] != "--") return;
+    if (this.isSquareAttacked(row, col + 1) || this.isSquareAttacked(row, col + 2)) return;
+    return moves.push(new Move(row, col, row, col - 2, this.position, this.enPassantSquare, true));
+  }
+
+  getCastlingMoves(moves) {
+    if (this.turn == "w") {
+      if (this.currentCastleRights.wks) {
+        this.getCastleKingsideMove(this.whiteKingLocation[0], this.whiteKingLocation[1], moves);
+      }
+      if (this.currentCastleRights.wqs) {
+        this.getCastleQueensideMove(this.whiteKingLocation[0], this.whiteKingLocation[1], moves);
+      }
+    } else {
+      if (this.currentCastleRights.bks) {
+        this.getCastleKingsideMove(this.blackKingLocation[0], this.blackKingLocation[1], moves);
+      }
+      if (this.currentCastleRights.bqs) {
+        this.getCastleQueensideMove(this.blackKingLocation[0], this.blackKingLocation[1], moves);
+      }
+    }
+  }
+
   getAllMoves() {
     let allMoves = [];
     for (let i = 0; i < 8; i++) {
@@ -385,7 +506,7 @@ class Game {
               pieceMoves = this.getKingMoves(i, j);
               break;
           }
-          for (let move of pieceMoves) {
+          for (const move of pieceMoves) {
             allMoves.push(move);
           }
         }
@@ -395,6 +516,7 @@ class Game {
   }
 
   getValidMoves() {
+    const tempEnPassantSquare = this.enPassantSquare;
     let validMoves = [];
     const allMoves = this.getAllMoves();
     for (const move of allMoves) {
@@ -403,10 +525,13 @@ class Game {
       this.undoMove(move);
     }
 
+    this.getCastlingMoves(validMoves);
+
     if (validMoves.length == 0) {
       if (this.isCheck()) this.checkmate = true;
       else this.stalemate = true;
     }
+    this.enPassantSquare = tempEnPassantSquare;
 
     return validMoves;
   }
@@ -430,21 +555,5 @@ class Game {
     }
     return false;
   }
-
-  isValidMove(move) {
-    const validMoves = this.getValidMoves();
-    for (const validMove of validMoves) {
-      if (
-        move.endRow == validMove.endRow &&
-        move.endCol == validMove.endCol &&
-        move.startRow == validMove.startRow &&
-        move.startCol == validMove.startCol
-      ) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  
 }
+

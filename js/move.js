@@ -1,5 +1,5 @@
 class Move {
-  constructor(startRow, startCol, endRow, endCol, position) {
+  constructor(startRow, startCol, endRow, endCol, position, isEnPassant = false, isCastling = false) {
     this.startRow = startRow;
     this.startCol = startCol;
     this.endRow = endRow;
@@ -7,21 +7,17 @@ class Move {
     this.movedPiece = position[startRow][startCol];
     this.capturedPiece = position[endRow][endCol];
 
-    //   this.isPromotion = false;
-    //   if (this.movedPiece instanceof Pawn && (this.endRow == 7 || this.endRow == 0)) {
-    //     this.isPromotion = true;
-    //   }
+    // En passant
+    this.isEnPassant = isEnPassant;
+    if (this.isEnPassant) {
+      this.capturedPiece = this.movedPiece == "wp" ? "bp" : "wp";
+    }
 
-    //   this.isEnPassant = false;
-    //   if (
-    //     enPassantSquare != null &&
-    //     this.movedPiece instanceof Pawn &&
-    //     enPassantSquare.row == this.startRow &&
-    //     enPassantSquare.col == this.endCol
-    //   ) {
-    //     this.isEnPassant = true;
-    //     if (this.movedPiece.color == "white") this.capturedPiece = this.position[enPassantSquare.row + 1][enPassantSquare.col];
-    //     else this.capturedPiece = this.position[enPassantSquare.row - 1][enPassantSquare.col];
-    //   }
+    // Promotion
+    this.isPromotion = (this.movedPiece == "wp" && this.endRow == 0) || (this.movedPiece == "bp" && this.endRow == 7);
+
+    // Castling
+    this.isCastling = isCastling;
   }
 }
+
